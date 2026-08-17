@@ -8,38 +8,53 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<User>
+ * Factory adalah "blueprint" untuk membuat data test/seed yang realistis.
+ * Setara dengan test fixtures di Jest atau factory functions di testing TS.
+ *
+ * Cara pakai:
+ *   User::factory()->create()              // buat 1 user acak
+ *   User::factory(5)->create()             // buat 5 user acak
+ *   User::factory()->admin()->create()     // buat 1 admin
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
+    protected $model = User::class;
 
     /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
+     * Define: nilai default untuk setiap field.
+     * faker->xxx() menghasilkan data palsu tapi realistis.
      */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'name'              => fake()->name(),
+            'email'             => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'password'          => Hash::make('password'), // semua seed user pakai 'password'
+            'role'              => 'user',                 // default: user biasa
+            'remember_token'    => Str::random(10),
         ];
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * "State" — variasi dari definition().
+     * User::factory()->admin()->create() → buat user dengan role admin
+     */
+    public function admin(): static
+    {
+        return $this->state(['role' => 'admin']);
+    }
+
+    public function agent(): static
+    {
+        return $this->state(['role' => 'agent']);
+    }
+
+    /**
+     * State untuk user yang belum verifikasi email.
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(['email_verified_at' => null]);
     }
 }
